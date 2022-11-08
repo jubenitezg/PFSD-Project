@@ -1,0 +1,35 @@
+@startuml project-archiquecture
+!include <cloudinsight/kafka>
+!theme vibrant
+' left to right direction
+top to bottom direction
+
+cloud Finnhub {
+  [Finnhub REST API] -down- HTTPS
+  [Finnhub Websocket API] - WSS
+}
+
+component Producer
+
+queue "<$kafka>" as Kafka
+
+
+node Spark {
+    [Spark Streaming]
+}
+
+database MongoDB 
+
+component Email {
+    [Email Service]
+}
+
+[Producer] --> HTTPS 
+[Producer] --> WSS : consumes
+
+[Producer] -> [Kafka]
+[Kafka] -> [Spark Streaming]
+
+[Spark Streaming] --> [MongoDB]
+[Spark Streaming] --> [Email Service]
+@enduml
