@@ -8,7 +8,8 @@ object Main {
     sys.env.get("FINNHUB_TOKEN") match {
       case Some(token) =>
         val finnhubClient = new FinnhubClient(token)
-        println(finnhubClient.symbolLookup("apple"))
+//        println(finnhubClient.symbolLookup("vmware"))
+        finnhubClient.webSocket()
       case None => println("No token found")
     }
   }

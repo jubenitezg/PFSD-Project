@@ -1,40 +1,31 @@
 package co.edu.escuelaing
 package finnhub
 
+import finnhub.FinnhubClient.WEBSOCKET_ENDPOINT
+import kafka.config.Config
+import kafka.producer.Producer
 import schema.{RecommendationTrend, SymbolLookup, SymbolLookupResult}
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import com.typesafe.scalalogging.Logger
 import io.circe.Decoder
+
+import scala.concurrent.{Future, Promise}
 
 
 case class FinnhubClient(token: String) {
 
-  import finnhub.FinnhubClient.{FOREX_EXCHANGE_ENDPOINT, RECOMMENDATION_TRENDS_ENDPOINT, SYMBOL_LOOKUP_ENDPOINT, recommendationTrendDecoder, symbolLookupDecoder}
+  import finnhub.FinnhubClient.{RECOMMENDATION_TRENDS_ENDPOINT, SYMBOL_LOOKUP_ENDPOINT, recommendationTrendDecoder, symbolLookupDecoder, system}
 
-  import akka.Done
-  import akka.actor.ActorSystem
-  import akka.http.scaladsl.Http
-  import akka.http.scaladsl.model._
   import akka.http.scaladsl.model.ws._
   import akka.stream.scaladsl._
   import io.circe.parser._
   import sttp.client3._
 
-  import scala.concurrent.Future
+  val LOGGER: Logger = Logger("FinnhubClient")
 
   val backend: SttpBackend[Identity, Any] = HttpClientSyncBackend()
-
-  /**
-   * Get forex exchanges from https://finnhub.io/api/v1/forex/exchange
-   *
-   * @return
-   */
-  def forexExchanges(): Either[Exception, List[String]] = {
-    val url = s"$FOREX_EXCHANGE_ENDPOINT?token=$token"
-    basicRequest.get(uri"$url").send(backend).body match {
-      case Right(body) => decode[List[String]](body)
-      case Left(error) => Left(new Exception(error))
-    }
-  }
 
   /**
    * Search symbols from https://finnhub.io/api/v1/search
@@ -65,14 +56,48 @@ case class FinnhubClient(token: String) {
       case Left(error) => Left(new Exception(error))
     }
   }
+
+  /**
+   * Real time US stock, forex and crypto from wss://ws.finnhub.io
+   *
+   * @param producer
+   * @param messages
+   * @return
+   */
+  def tradesWebSocket(producer: Producer, messages: List[String]): Promise[Option[Nothing]] = {
+    import system.dispatcher
+    val textMessages = messages.map(TextMessage(_))
+    val flow = Flow.fromSinkAndSourceMat(
+      Sink.foreach[Message](m => producer.send(Config.TOPIC, Config.TOPIC, m.toString.toArray)),
+      Source(textMessages)
+        .concatMat(Source.maybe)(Keep.right))(Keep.right)
+
+    val (upgradeResponse, promise) =
+      Http().singleWebSocketRequest(
+        WebSocketRequest(s"$WEBSOCKET_ENDPOINT?token=$token"),
+        flow
+      )
+
+    upgradeResponse.flatMap { upgrade =>
+      if (upgrade.response.status.isSuccess()) {
+        Future.successful(LOGGER.info("WebSocket connected"))
+      } else {
+        throw new RuntimeException(s"Connection failed: ${upgrade.response.status}")
+      }
+    }
+
+    promise
+  }
 }
 
 object FinnhubClient {
   def apply(token: String): FinnhubClient = new FinnhubClient(token)
 
-  lazy val FOREX_EXCHANGE_ENDPOINT = "https://finnhub.io/api/v1/forex/exchange"
   lazy val SYMBOL_LOOKUP_ENDPOINT = "https://finnhub.io/api/v1/search"
   lazy val RECOMMENDATION_TRENDS_ENDPOINT = "https://finnhub.io/api/v1/stock/recommendation"
+  lazy val WEBSOCKET_ENDPOINT = "wss://ws.finnhub.io"
+
+  implicit val system: ActorSystem = ActorSystem()
 
   implicit val resultDecoder: Decoder[SymbolLookupResult] = Decoder.forProduct4(
     "description",
