@@ -10,10 +10,10 @@ object TradesProducer extends Producer {
 
   val LOGGER: Logger = Logger("TradesProducer")
 
-  val producer = new KafkaProducer[String, Array[Byte]](Config.kafkaProducerProps)
+  val producer = new KafkaProducer[String, String](Config.KAFKA_PRODUCER_PROPS)
 
-  def send(topic: String, key: String, value: Array[Byte]): Unit = {
-    val record = new ProducerRecord[String, Array[Byte]](topic, key, value)
+  def send(topic: String, key: String, value: String): Unit = {
+    val record = new ProducerRecord[String, String](topic, key, value)
     producer.send(record)
     LOGGER.info(s"Sent record: $record")
   }

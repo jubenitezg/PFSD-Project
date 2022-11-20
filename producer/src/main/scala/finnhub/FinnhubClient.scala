@@ -4,7 +4,7 @@ package finnhub
 import finnhub.FinnhubClient.WEBSOCKET_ENDPOINT
 import kafka.config.Config
 import kafka.producer.Producer
-import schema.{RecommendationTrend, SymbolLookup, SymbolLookupResult}
+import schema.{RecommendationTrend, Subscription, SymbolLookup, SymbolLookupResult}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -64,11 +64,11 @@ case class FinnhubClient(token: String) {
    * @param messages
    * @return
    */
-  def tradesWebSocket(producer: Producer, messages: List[String]): Promise[Option[Nothing]] = {
+  def tradesWebSocket(producer: Producer, messages: List[Subscription]): Promise[Option[Nothing]] = {
     import system.dispatcher
-    val textMessages = messages.map(TextMessage(_))
+    val textMessages = messages.map(s => TextMessage(s.toJson))
     val flow = Flow.fromSinkAndSourceMat(
-      Sink.foreach[Message](m => producer.send(Config.TOPIC, Config.TOPIC, m.toString.toArray)),
+      Sink.foreach[Message](m => producer.send(Config.TOPIC, Config.KEY, m.toString)),
       Source(textMessages)
         .concatMat(Source.maybe)(Keep.right))(Keep.right)
 
