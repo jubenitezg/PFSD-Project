@@ -9,17 +9,22 @@ import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 object TradesConsumer extends App {
 
-
   val conf = new SparkConf().setAppName("TradesConsumer").setMaster("local[*]")
   val ssc = new StreamingContext(conf, Seconds(1))
 
-  // TODO: move to config
-  val topic = "trades"
 
   val messages = KafkaUtils.createDirectStream[String, String](
     ssc,
     LocationStrategies.PreferConsistent,
-    ConsumerStrategies.Subscribe[String, String](Set(topic), Config.kafkaConsumerProps)
+    ConsumerStrategies.Subscribe[String, String](Set(Config.TRADES_TOPIC), Config.KAFKA_CONSUMER_PROPS)
   )
+
+  val lines = messages.map(_.value)
+  val words = lines.flatMap(_.split(" "))
+  val wordCounts = words.map(x => (x, 1L))
+    .reduceByKey(_ + _)
+  wordCounts.print()
+  ssc.start()
+  ssc.awaitTermination()
 
 }
