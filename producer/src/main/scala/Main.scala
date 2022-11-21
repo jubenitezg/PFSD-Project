@@ -6,9 +6,6 @@ import kafka.producer.TradesProducer
 
 import com.typesafe.scalalogging.Logger
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-
 object Main {
 
   val LOGGER: Logger = Logger("Main")

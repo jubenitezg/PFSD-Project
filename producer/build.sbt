@@ -23,3 +23,12 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.4.4"
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5"
 libraryDependencies += "org.apache.kafka" % "kafka-clients" % "3.3.1"
 libraryDependencies += "org.apache.kafka" %% "kafka-streams-scala" % "3.3.1"
+
+
+Compile / PB.targets := Seq(
+  scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
+)
+
+libraryDependencies ++= Seq(
+  "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
+)

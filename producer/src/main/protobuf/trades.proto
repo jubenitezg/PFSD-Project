@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package co.edu.escuelaing.protos;
+
+message Trade {
+  string type = 1;
+  message Data {
+    string symbol = 1;
+    double price = 2;
+    int64 timestamp = 3;
+    double volume = 4;
+    int32 conditions = 5;
+  }
+  repeated Data data = 2;
+}

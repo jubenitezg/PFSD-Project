@@ -1,22 +1,24 @@
 package co.edu.escuelaing
 package finnhub
 
-import finnhub.FinnhubClient.WEBSOCKET_ENDPOINT
 import kafka.config.Config
 import kafka.producer.Producer
+import protos.trades.Trade
+import protos.trades.Trade.Data
 import schema.{RecommendationTrend, Subscription, SymbolLookup, SymbolLookupResult}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import com.typesafe.scalalogging.Logger
 import io.circe.Decoder
+import scalapb.UnknownFieldSet
 
 import scala.concurrent.{Future, Promise}
 
 
 case class FinnhubClient(token: String) {
 
-  import finnhub.FinnhubClient.{RECOMMENDATION_TRENDS_ENDPOINT, SYMBOL_LOOKUP_ENDPOINT, recommendationTrendDecoder, symbolLookupDecoder, system}
+  import finnhub.FinnhubClient._
 
   import akka.http.scaladsl.model.ws._
   import akka.stream.scaladsl._
@@ -59,18 +61,28 @@ case class FinnhubClient(token: String) {
 
   /**
    * Real time US stock, forex and crypto from wss://ws.finnhub.io
+   * Sends to kafka topic "trades"
    *
    * @param producer
-   * @param messages
+   * @param subscriptions
    * @return
    */
-  def tradesWebSocket(producer: Producer, messages: List[Subscription]): Promise[Option[Nothing]] = {
+  def tradesWebSocket(producer: Producer[Trade], subscriptions: List[Subscription]): Promise[Option[Nothing]] = {
     import system.dispatcher
-    val textMessages = messages.map(s => TextMessage(s.toJson))
+    val textMessages = subscriptions.map(s => TextMessage(s.toJson))
     val flow = Flow.fromSinkAndSourceMat(
-      Sink.foreach[Message](m => producer.send(Config.TOPIC, Config.KEY, m.toString)),
+      Sink.foreach[Message] {
+        case tm: TextMessage.Strict =>
+          decode[Trade](tm.text) match {
+            case Right(trade) =>
+              producer.send(Config.TOPIC, trade.`type`, trade)
+            case Left(error) => LOGGER.warn(s"Error decoding trade: $error")
+          }
+        case _ => LOGGER.warn("Unexpected message type")
+      },
       Source(textMessages)
-        .concatMat(Source.maybe)(Keep.right))(Keep.right)
+        .concatMat(Source.maybe)(Keep.right)
+    )(Keep.right)
 
     val (upgradeResponse, promise) =
       Http().singleWebSocketRequest(
@@ -112,6 +124,36 @@ object FinnhubClient {
         result <- cursor.downField("result").as[List[SymbolLookupResult]]
       } yield SymbolLookup(count, result)
   }
+
+  implicit val tradeDecoder: Decoder[Trade] = Decoder.instance {
+    cursor =>
+      for {
+        data <- cursor.downField("data").as[List[Data]]
+        typee <- cursor.get[String]("type")
+      } yield Trade(typee, data)
+  }
+
+  implicit val dataDecoder: Decoder[Data] = Decoder.instance {
+    cursor =>
+      for {
+        symbol <- cursor.get[String]("s")
+        price <- cursor.get[Double]("p")
+        timestamp <- cursor.get[Long]("t")
+        volume <- cursor.get[Double]("v")
+        conditions <- {
+          val conditions = cursor.get[Int]("c")
+          conditions match {
+            case Right(c) => Right(c)
+            case Left(_) => Right(0)
+          }
+        }
+      } yield Data(symbol, price, timestamp, volume, conditions)
+  }
+
+  // Decoder set to ignore unknown fields
+  implicit val unknownFields: Decoder[UnknownFieldSet] = Decoder.instance(
+    cursor => Right(UnknownFieldSet())
+  )
 
   implicit val recommendationTrendDecoder: Decoder[RecommendationTrend] = Decoder.forProduct7(
     "period",
