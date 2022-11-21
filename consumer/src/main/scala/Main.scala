@@ -1,7 +1,10 @@
 package co.edu.escuelaing
 
+
+import mail.SmtpMailer
+
 object Main {
   def main(args: Array[String]): Unit = {
-    println("Hello world!")
+    SmtpMailer.sendAlert("test")
   }
 }
