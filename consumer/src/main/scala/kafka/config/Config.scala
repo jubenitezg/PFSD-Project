@@ -10,7 +10,7 @@ object Config {
     Map[String, Object](
       "bootstrap.servers" -> bootstrapServers,
       "key.deserializer" -> "org.apache.kafka.common.serialization.StringDeserializer",
-      "value.deserializer" -> "org.apache.kafka.common.serialization.StringDeserializer",
+      "value.deserializer" -> "org.apache.kafka.common.serialization.ByteArrayDeserializer",
       "group.id" -> "trades-consumer"
     )
   }
