@@ -21,14 +21,17 @@ object TradesConsumer extends App {
   )
 
   messages
-    .map(x => Trade.parseFrom(x.value))
+    .map(m => Trade.parseFrom(m.value))
+    .map(_.data) // List(Data1,Data2, Data3, ...)
+    .map(_.groupBy(_.symbol)) // Map(symbol1 -> List(Data1, Data2), symbol2 -> List(Data3, Data4), ...)
+    .map(dataFromSymbol => {
+      dataFromSymbol.view.mapValues(data => {
+        (data.map(_.price).max, data.map(_.price).min)
+      }).toMap
+      // TODO: send to service to detect if max detected or min detected
+    }) // Map(symbol1 -> (maxPrice1, minPrice1), symbol2 -> (maxPrice2, minPrice2), ...)
     .print()
 
-  //  val lines = messages.map(_.value)
-  //  val words = lines.flatMap(_.split(" "))
-  //  val wordCounts = words.map(x => (x, 1L))
-  //    .reduceByKey(_ + _)
-  //  wordCounts.print()
   ssc.start()
   ssc.awaitTermination()
 
