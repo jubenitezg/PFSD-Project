@@ -8,7 +8,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.streaming.kafka010.{ConsumerStrategies, KafkaUtils, LocationStrategies}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
-object TradesConsumer extends App {
+object TradesConsumer extends App with Consumer[Trade] {
 
   val conf = new SparkConf().setAppName("TradesConsumer").setMaster("local[*]")
   val ssc = new StreamingContext(conf, Seconds(1))
@@ -28,11 +28,17 @@ object TradesConsumer extends App {
       dataFromSymbol.view.mapValues(data => {
         (data.map(_.price).max, data.map(_.price).min)
       }).toMap
+    }) // // Map(symbol1 -> (maxPrice1, minPrice1), symbol2 -> (maxPrice2, minPrice2), ...)
+    .foreachRDD(rdd => {
       // TODO: send to service to detect if max detected or min detected
-    }) // Map(symbol1 -> (maxPrice1, minPrice1), symbol2 -> (maxPrice2, minPrice2), ...)
-    .print()
+      rdd.foreachPartition(partition => {
+        partition.foreach(println)
+      })
+    })
+//    .print()
 
   ssc.start()
   ssc.awaitTermination()
 
+  override def process(topic: String, key: String, value: Trade): Unit = ???
 }
