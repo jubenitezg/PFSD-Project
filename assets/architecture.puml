@@ -18,8 +18,6 @@ node Spark {
     [Spark Streaming]
 }
 
-database MongoDB 
-
 component Email {
     [Email Service]
 }
@@ -30,6 +28,5 @@ component Email {
 [Producer] -> [Kafka]
 [Kafka] -> [Spark Streaming]
 
-[Spark Streaming] --> [MongoDB]
 [Spark Streaming] --> [Email Service]
 @enduml
