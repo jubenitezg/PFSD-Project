@@ -1,10 +1,10 @@
 package co.edu.escuelaing
-package finnhub
+package clients.finnhub
 
 import kafka.config.Config
 import kafka.producer.Producer
-import protos.trades.Trade
-import protos.trades.Trade.Data
+import protos.trades.TradeProto
+import protos.trades.TradeProto.Data
 import schema.{RecommendationTrend, Subscription, SymbolLookup, SymbolLookupResult}
 
 import akka.actor.ActorSystem
@@ -18,7 +18,7 @@ import scala.concurrent.{Future, Promise}
 
 case class FinnhubClient(token: String) {
 
-  import finnhub.FinnhubClient._
+  import FinnhubClient._
 
   import akka.http.scaladsl.model.ws._
   import akka.stream.scaladsl._
@@ -59,6 +59,8 @@ case class FinnhubClient(token: String) {
     }
   }
 
+  // TODO: include Social Sentiment? Get social sentiment for stocks on Reddit and Twitter. I can use it for positive mentions
+
   /**
    * Real time US stock, forex and crypto from wss://ws.finnhub.io
    * Sends to kafka topic "trades"
@@ -67,15 +69,15 @@ case class FinnhubClient(token: String) {
    * @param subscriptions
    * @return
    */
-  def tradesWebSocket(producer: Producer[Trade], subscriptions: List[Subscription]): Promise[Option[Nothing]] = {
+  def tradesWebSocket(producer: Producer[TradeProto], subscriptions: List[Subscription]): Promise[Option[Nothing]] = {
     import system.dispatcher
     val textMessages = subscriptions.map(s => TextMessage(s.toJson))
     val flow = Flow.fromSinkAndSourceMat(
       Sink.foreach[Message] {
         case tm: TextMessage.Strict =>
-          decode[Trade](tm.text) match {
+          decode[TradeProto](tm.text) match {
             case Right(trade) =>
-              producer.send(Config.TOPIC, trade.`type`, trade)
+              producer.send(Config.TRADES_TOPIC, trade.`type`, trade)
             case Left(error) => LOGGER.warn(s"Error decoding trade: $error")
           }
         case _ => LOGGER.warn("Unexpected message type")
@@ -125,12 +127,12 @@ object FinnhubClient {
       } yield SymbolLookup(count, result)
   }
 
-  implicit val tradeDecoder: Decoder[Trade] = Decoder.instance {
+  implicit val tradeDecoder: Decoder[TradeProto] = Decoder.instance {
     cursor =>
       for {
         data <- cursor.downField("data").as[List[Data]]
         typee <- cursor.get[String]("type")
-      } yield Trade(typee, data)
+      } yield TradeProto(typee, data)
   }
 
   implicit val dataDecoder: Decoder[Data] = Decoder.instance {

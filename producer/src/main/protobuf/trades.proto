@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package co.edu.escuelaing.protos;
 
-message Trade {
+message TradeProto {
   string type = 1;
   message Data {
     string symbol = 1;

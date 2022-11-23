@@ -5,8 +5,8 @@ import java.util.Properties
 
 object Config {
 
-  val TOPIC = "trades"
-  val KEY = "websockets"
+  val TRADES_TOPIC = "trades"
+  val EXCHANGE_TOPIC = "exchange-rates"
 
   val KAFKA_PRODUCER_PROPS: Properties = {
     val props = new Properties()
