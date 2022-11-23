@@ -4,6 +4,7 @@ package kafka.config
 object Config {
 
   val TRADES_TOPIC = "trades"
+  val EXCHANGE_TOPIC = "exchange-rates"
 
   val KAFKA_CONSUMER_PROPS: Map[String, Object] = {
     val bootstrapServers = sys.env.getOrElse("BOOTSTRAP_SERVERS", "localhost:9093")
