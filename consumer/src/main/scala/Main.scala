@@ -1,10 +1,15 @@
 package co.edu.escuelaing
 
-
-import mail.SmtpMailer
+import kafka.consumer.ExchangeConsumer
 
 object Main {
   def main(args: Array[String]): Unit = {
-    SmtpMailer.sendAlert("PFSD Mailer", "This is a test")
+    val exchangeConsumerThread = new Thread {
+      override def run(): Unit = {
+        ExchangeConsumer.consume()
+      }
+    }
+
+    exchangeConsumerThread.start()
   }
 }

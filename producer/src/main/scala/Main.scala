@@ -36,11 +36,12 @@ object Main {
           case Some(token) =>
             val exchangeClient = new OpenExchangeClient(token)
             val exchangeRateProducer = ExchangeRatesProducer
+            val exchangeRatesModifier = ExchangeRatesModifier
             while (true) {
               val exceptionOrRates = exchangeClient.exchangeRates(Cache)
               exceptionOrRates match {
                 case Right(rates) =>
-                  val modRates = ExchangeRatesModifier.modifyRandom(rates, randomValueMax = 1000)
+                  val modRates = exchangeRatesModifier.modifyFixed(rates)
                   exchangeRateProducer.send(EXCHANGE_TOPIC, modRates.base, modRates.toProto)
                 case Left(exception) =>
                   LOGGER.error("Error getting exchange rates", exception)
@@ -52,7 +53,7 @@ object Main {
       }
     }
 
-    finnhubTradesThread.start()
+//    finnhubTradesThread.start()
     exchangeRatesThread.start()
   }
 }
