@@ -4,28 +4,33 @@ package mail
 import mail.config.Config
 import ports.ForAlerting
 
+import com.typesafe.scalalogging.Logger
+
 import javax.mail.internet.{InternetAddress, MimeMessage}
 import javax.mail.{Message, Session}
 
 
 object SmtpMailer extends ForAlerting {
 
-  override def sendAlert(alert: String): Either[Throwable, Unit] = {
-    println(s"Sending alert: $alert")
-    val session = Session.getDefaultInstance(Config.properties)
-    val message = new MimeMessage(session)
-    message.setSubject("ALERT from SCALA")
-    message.setText("TEST FROM SCALA")
-    message.setFrom(new InternetAddress(Config.properties.get("mail.smtp.mail.sender").toString))
-    message.addRecipient(
-      Message.RecipientType.TO,
-      new InternetAddress("julian.benitezg99@gmail.com")
-    )
-    val t = session.getTransport("smtp")
-    t.connect(Config.properties.get("mail.smtp.user").toString, Config.properties.get("mail.smtp.pass").toString)
-    t.sendMessage(message, message.getAllRecipients)
-    t.close()
-    Right(())
+  val LOGGER: Logger = Logger("SmtpMailer")
+
+  override def sendAlert(alert: String, msg: String): Either[Throwable, Unit] = {
+    util.Try {
+      val session = Session.getDefaultInstance(Config.properties)
+      val message = new MimeMessage(session)
+      message.setSubject(alert)
+      message.setText(msg)
+      message.setFrom(new InternetAddress(Config.sender))
+      message.addRecipient(
+        Message.RecipientType.TO,
+        new InternetAddress(Config.recipient)
+      )
+      val t = session.getTransport(Config.protocol)
+      t.connect(Config.user, Config.pass)
+      t.sendMessage(message, message.getAllRecipients)
+      LOGGER.info(s"Alert sent: $alert")
+      t.close()
+    }.toEither
   }
 
 }

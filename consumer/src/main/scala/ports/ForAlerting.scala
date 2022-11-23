@@ -3,6 +3,6 @@ package ports
 
 trait ForAlerting {
 
-  def sendAlert(alert: String): Either[Throwable, Unit]
+  def sendAlert(alert: String, msg:String): Either[Throwable, Unit]
 
 }
