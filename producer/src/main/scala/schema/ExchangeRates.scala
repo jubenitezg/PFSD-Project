@@ -1,4 +1,18 @@
 package co.edu.escuelaing
 package schema
 
-case class ExchangeRates(disclaimer: String, license: String, timestamp: Long, base: String, rates: Map[String, Double])
+import protos.exchange_rates.ExchangeRatesProto
+
+case class ExchangeRates(disclaimer: String, license: String, timestamp: Long, base: String, rates: Map[String, Double]) {
+
+  def toProto: ExchangeRatesProto = {
+    ExchangeRatesProto(
+      disclaimer = disclaimer,
+      license = license,
+      timestamp = timestamp,
+      base = base,
+      rates = rates
+    )
+  }
+
+}

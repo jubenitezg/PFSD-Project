@@ -8,6 +8,7 @@ import io.circe.Decoder
 import io.circe.jawn.decode
 import sttp.client3.{HttpClientSyncBackend, Identity, SttpBackend, UriContext, basicRequest}
 
+import scala.collection.mutable
 import scala.io.Source
 
 case class OpenExchangeClient(token: String) {
@@ -18,6 +19,8 @@ case class OpenExchangeClient(token: String) {
   val LOGGER: Logger = Logger("OpenExchangeClient")
 
   val backend: SttpBackend[Identity, Any] = HttpClientSyncBackend()
+
+  val cache: mutable.Map[String, ExchangeRates] = mutable.HashMap[String, ExchangeRates]()
 
   def exchangeRates(strategy: Strategy): Either[Exception, ExchangeRates] = {
     strategy match {
@@ -30,8 +33,14 @@ case class OpenExchangeClient(token: String) {
         }
       case Cache =>
         LOGGER.info("Getting cached exchange rates from OpenExchange")
-        val resource = Source.fromResource("exchange-latest.json")
-        decode[ExchangeRates](resource.mkString)
+        cache.get("exchange_rates") match {
+          case Some(exchangeRates) => Right(exchangeRates)
+          case None =>
+            val resource = Source.fromResource("exchange-latest.json")
+            val exchangeRates = decode[ExchangeRates](resource.mkString)
+            cache("exchange_rates") = exchangeRates.getOrElse(throw new Exception("Could not decode exchange rates"))
+            exchangeRates
+        }
     }
   }
 
