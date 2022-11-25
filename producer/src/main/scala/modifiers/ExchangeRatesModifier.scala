@@ -10,7 +10,7 @@ object ExchangeRatesModifier {
   var curr = 0
   var modifier = 15
 
-  val LOGGER = Logger("ExchangeRatesModifier")
+  val LOGGER: Logger = Logger("ExchangeRatesModifier")
 
   def modifyFixed(exchangeRates: ExchangeRates): ExchangeRates = {
     LOGGER.info(s"Modifying exchange rates: curr($curr) modifier($modifier)")

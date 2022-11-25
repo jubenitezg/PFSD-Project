@@ -59,8 +59,6 @@ case class FinnhubClient(token: String) {
     }
   }
 
-  // TODO: include Social Sentiment? Get social sentiment for stocks on Reddit and Twitter. I can use it for positive mentions
-
   /**
    * Real time US stock, forex and crypto from wss://ws.finnhub.io
    * Sends to kafka topic "trades"

@@ -6,7 +6,7 @@ import java.util.Properties
 object Config {
 
   val properties: Properties = {
-    val props = new java.util.Properties()
+    val props = new Properties()
     val sender = sys.env.getOrElse("EMAIL_USER", throw new RuntimeException("EMAIL_USER environment variable is needed"))
     val pass = sys.env.getOrElse("EMAIL_PASS", throw new RuntimeException("EMAIL_PASS environment variable is needed"))
     props.setProperty("mail.smtp.host", "smtp-mail.outlook.com")
@@ -20,7 +20,7 @@ object Config {
     props
   }
   val sender: String = properties.get("mail.smtp.mail.sender").toString
-  val recipient: String = sys.env.getOrElse("RECIPIENT", "julianbenitez08@hotmail.com")
+  val recipient: String = sys.env.getOrElse("RECIPIENT", sender)
   val protocol: String = "smtp"
   val user: String = properties.get("mail.smtp.user").toString
   val pass: String = properties.get("mail.smtp.pass").toString

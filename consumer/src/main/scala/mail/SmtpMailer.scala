@@ -24,8 +24,7 @@ object SmtpMailer extends ForAlerting {
     message.setFrom(new InternetAddress(Config.sender))
     message.addRecipient(
       Message.RecipientType.TO,
-      // For some weird reason, the email address arrives with quotes
-      new InternetAddress(Config.recipient.replace("\"", ""))
+      new InternetAddress(Config.recipient)
     )
     val t = session.getTransport(Config.protocol)
     t.connect(Config.user, Config.pass)
