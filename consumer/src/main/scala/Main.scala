@@ -11,5 +11,6 @@ object Main {
     }
 
     exchangeConsumerThread.start()
+    exchangeConsumerThread.join()
   }
 }

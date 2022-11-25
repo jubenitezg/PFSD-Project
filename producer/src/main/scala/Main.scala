@@ -55,5 +55,7 @@ object Main {
 
 //    finnhubTradesThread.start()
     exchangeRatesThread.start()
+    exchangeRatesThread.join()
+//    finnhubTradesThread.join()
   }
 }

@@ -1,0 +1,46 @@
+version: "3"
+services:
+  zookeeper:
+    image: 'bitnami/zookeeper:latest'
+    ports:
+      - '2181:2181'
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka:
+    image: 'bitnami/kafka:latest'
+    ports:
+      - '9093:9093'
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093
+      - KAFKA_INTER_BROKER_LISTENER_NAME=CLIENT
+    depends_on:
+      - zookeeper
+  producer:
+    image: 'jbenitezg/kafka-producer:1.0'
+    container_name: producer
+    environment:
+      - FINNHUB_TOKEN="${FINNHUB_TOKEN}"
+      - OPEN_EXCHANGE_APP_ID="${OPEN_EXCHANGE_APP_ID}"
+      - BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - kafka
+  consumer:
+    image: 'jbenitezg/kafka-consumer:1.0'
+    container_name: consumer
+    ports:
+      - '587:587'
+    environment:
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+      - RECIPIENT=${RECIPIENT}
+      - BOOTSTRAP_SERVERS=kafka:9092
+      - SMTP_PORT=587
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    depends_on:
+      - kafka
+

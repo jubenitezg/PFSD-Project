@@ -3,24 +3,24 @@ package detectors
 
 import ports.{ForAlerting, ForDetectingChanges}
 
+import com.typesafe.scalalogging.Logger
+
 object ExchangeRatesDetector extends ForDetectingChanges[Array[Map[String, Double]]] {
 
   val DETECT_RATE = "USD-COP"
   var MAX_RATE_DETECTED = 0.0
-  var MIN_RATE_DETECTED = 0.0
+
+  val LOGGER = Logger("ExchangeRatesDetector")
 
   override def detectChanges(value: Array[Map[String, Double]], forAlerting: ForAlerting): Unit = {
-    val maxValue = value.map(_.get(DETECT_RATE)).max.get
+    val values = value.map(_.get(DETECT_RATE)).map(_.get)
+    val maxValue = if (values.nonEmpty) values.max else 0.0
     if (maxValue > MAX_RATE_DETECTED) {
+
       if (MAX_RATE_DETECTED != 0.0) {
-        forAlerting.sendAlert("MAX_RATE_DETECTED", s"MAX_RATE_DETECTED: $MAX_RATE_DETECTED")
+        forAlerting.sendAlert(s"ALERT FOR $DETECT_RATE", s"MAX RATE DETECTED: $MAX_RATE_DETECTED $DETECT_RATE")
       }
       MAX_RATE_DETECTED = maxValue
-    } else if (maxValue < MIN_RATE_DETECTED) {
-      if (MIN_RATE_DETECTED != 0.0) {
-        forAlerting.sendAlert("MIN_RATE_DETECTED", s"MIN_RATE_DETECTED: $MIN_RATE_DETECTED")
-      }
-      forAlerting.sendAlert(s"New max rate detected for $DETECT_RATE", s"New max rate detected: $maxValue")
     }
   }
 
