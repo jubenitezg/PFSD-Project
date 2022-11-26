@@ -53,9 +53,9 @@ object Main {
       }
     }
 
-//    finnhubTradesThread.start()
+    finnhubTradesThread.start()
     exchangeRatesThread.start()
     exchangeRatesThread.join()
-//    finnhubTradesThread.join()
+    finnhubTradesThread.join()
   }
 }
