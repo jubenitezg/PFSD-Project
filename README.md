@@ -38,6 +38,9 @@ The necessary environment variables are set in the `docker-compose.yml` file:
 - `EXCHANGE_CONSUMER` - Use exchange consumer (default: `true`)
 - `TRADES_CONSUMER` - Use trades consumer(default: `true`)
 
+# Demo
+https://drive.google.com/file/d/1cGogh-UskiuxQbTMWDH58oXX836r-E9k/view?usp=sharing
+
 # License
 
 GNU GENERAL PUBLIC LICENSE [LICENSE.md](LICENSE.md)
