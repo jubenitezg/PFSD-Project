@@ -1,32 +1,48 @@
 @startuml project-archiquecture
 !include <cloudinsight/kafka>
+!define SPRITESURL https://raw.githubusercontent.com/plantuml-stdlib/gilbarbara-plantuml-sprites/v1.0/sprites
+!includeurl SPRITESURL/scala.puml
 !theme vibrant
 ' left to right direction
-top to bottom direction
+' top to bottom direction
+
+cloud OpenExchangeRates {
+    component OpenExchangeRatesAPI{
+        port "API" as openHTTPS
+    }
+}
 
 cloud Finnhub {
-  [Finnhub REST API] -down- HTTPS
-  [Finnhub Websocket API] - WSS
+    component FinnhubAPI {
+        port "API" as finnHTTPS
+    }
+    component FinnhubWSS {
+        port "WSS" as finnWSS
+    }
 }
 
-component Producer
+node DockerEngine {
+    rectangle "<$scala>" as Scala
+    queue "<$kafka>" as Kafka
 
-queue "<$kafka>" as Kafka
+    node ProducerDocker
 
+    Scala -- [ProducerDocker]
+    Scala -- [ConsumerDocker]
 
-node Spark {
-    [Spark Streaming]
+    node ConsumerDocker {
+        component [Spark Streaming]
+        component [Email Service]
+    }
+
+    [ProducerDocker] -0)- [finnHTTPS]: consumes
+    [ProducerDocker] -0)- [finnWSS]: consumes
+    [ProducerDocker] -0)- [openHTTPS]: consumes
+
+    [ProducerDocker] -right-> [Kafka]
+    [Kafka] -up-> [Spark Streaming]
+
+    [Spark Streaming] --> [Email Service]
 }
 
-component Email {
-    [Email Service]
-}
-
-[Producer] --> HTTPS 
-[Producer] --> WSS : consumes
-
-[Producer] -> [Kafka]
-[Kafka] -> [Spark Streaming]
-
-[Spark Streaming] --> [Email Service]
 @enduml
