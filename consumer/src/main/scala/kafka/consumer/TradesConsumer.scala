@@ -2,26 +2,14 @@ package co.edu.escuelaing
 package kafka.consumer
 
 import detectors.TradeDetector
-import kafka.config.Config
+import kafka.config.Config.tradesDS
 import mail.SmtpMailer
 import protos.trades.TradeProto
 
-import org.apache.spark.SparkConf
-import org.apache.spark.streaming.kafka010.{ConsumerStrategies, KafkaUtils, LocationStrategies}
-import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 object TradesConsumer extends Consumer[TradeProto] {
 
   override def consume(): Unit = {
-    val conf = new SparkConf().setAppName("TradesConsumer").setMaster("local[*]")
-    val ssc = new StreamingContext(conf, Seconds(1))
-
-    val tradesDS = KafkaUtils.createDirectStream[String, Array[Byte]](
-      ssc,
-      LocationStrategies.PreferConsistent,
-      ConsumerStrategies.Subscribe[String, Array[Byte]](Set(Config.TRADES_TOPIC), Config.KAFKA_CONSUMER_PROPS)
-    )
-
     val tradesDetector = TradeDetector
     tradesDS
       .map(m => TradeProto.parseFrom(m.value))
@@ -36,7 +24,5 @@ object TradesConsumer extends Consumer[TradeProto] {
         tradesDetector.detectChanges(rdd.collect(), SmtpMailer)
       })
 
-    ssc.start()
-    ssc.awaitTermination()
   }
 }
